@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://sidereal.cc">
-    <img src="assets/sidereal-beacon-icon.png" width="128" alt="Sidereal Beacon">
+    <img src="assets/sidereal-icon.png" width="128" alt="Sidereal Beacon">
   </a>
 </p>
 
