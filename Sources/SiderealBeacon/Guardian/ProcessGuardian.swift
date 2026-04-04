@@ -340,4 +340,54 @@ public actor ProcessGuardian {
         }
         return parts.isEmpty ? "over budget" : parts.joined(separator: "; ")
     }
+
+    // MARK: - Process Discovery
+
+    /// Find all running processes whose binary path contains the given name.
+    ///
+    /// Uses `proc_listallpids` to enumerate PIDs and `proc_pidpath` to resolve
+    /// each to a binary path. Returns PIDs whose path's last component matches
+    /// the name, or whose path contains the name as a substring.
+    ///
+    /// This is a general-purpose utility — callers decide what to do with the results.
+    public static func findProcesses(named name: String) -> [pid_t] {
+        // Get count of all PIDs
+        let count = proc_listallpids(nil, 0)
+        guard count > 0 else { return [] }
+
+        var pids = [pid_t](repeating: 0, count: Int(count))
+        let actualCount = pids.withUnsafeMutableBufferPointer { buffer in
+            proc_listallpids(buffer.baseAddress, Int32(buffer.count) * Int32(MemoryLayout<pid_t>.size))
+        }
+        guard actualCount > 0 else { return [] }
+
+        var results: [pid_t] = []
+        var pathBuffer = [CChar](repeating: 0, count: Int(MAXPATHLEN))
+
+        for i in 0..<Int(actualCount) {
+            let pid = pids[i]
+            guard pid > 0 else { continue }
+
+            let pathLen = proc_pidpath(pid, &pathBuffer, UInt32(MAXPATHLEN))
+            guard pathLen > 0 else { continue }
+
+            let path = String(cString: pathBuffer)
+            let binaryName = (path as NSString).lastPathComponent
+
+            if binaryName == name || binaryName.contains(name) {
+                results.append(pid)
+            }
+        }
+
+        return results
+    }
+
+    /// Get the parent PID of a process via `proc_pidinfo`.
+    public static func parentPID(of pid: pid_t) -> pid_t? {
+        var info = proc_bsdinfo()
+        let size = Int32(MemoryLayout<proc_bsdinfo>.size)
+        let result = proc_pidinfo(pid, PROC_PIDTBSDINFO, 0, &info, size)
+        guard result == size else { return nil }
+        return pid_t(info.pbi_ppid)
+    }
 }
