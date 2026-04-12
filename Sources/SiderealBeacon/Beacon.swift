@@ -84,6 +84,12 @@ public actor Beacon {
     /// Whether `start()` has been called (and `stop()` has not).
     private var isRunning = false
 
+    /// Reusable sender for report transmission.
+    private let sender: ReportSender
+
+    /// Background task for periodic report flushing.
+    private var flushTask: Task<Void, Never>?
+
     // MARK: - Factory
 
     /// Creates and configures a Beacon instance.
@@ -125,7 +131,9 @@ public actor Beacon {
         self._config = config
         self.appInfo = appInfo
         self.scrubber = PIIScrubber(customPatterns: customScrubPatterns)
-        self.store = store ?? ReportStore()
+        let storeInstance = store ?? ReportStore()
+        self.store = storeInstance
+        self.sender = ReportSender(config: config, store: storeInstance)
         self.breadcrumbs = BreadcrumbTrail()
         self.crashCollector = CrashCollector(breadcrumbs: breadcrumbs)
 
@@ -171,6 +179,18 @@ public actor Beacon {
             await saveCrashReport(crash)
         }
 
+        // Flush any pending reports (including just-recovered crashes).
+        await flushPending()
+
+        // Start periodic flush — retries unsent reports every 5 minutes.
+        flushTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 5 * 60 * 1_000_000_000)
+                guard !Task.isCancelled else { break }
+                await self?.flushPending()
+            }
+        }
+
         logger.info("Beacon started — \(pendingCrashes.count) pending crash(es) recovered")
     }
 
@@ -178,6 +198,12 @@ public actor Beacon {
     /// guardian polling loop, and stops diagnostic collection.
     public func stop() async {
         guard isRunning else { return }
+
+        flushTask?.cancel()
+        flushTask = nil
+
+        // Final flush before shutdown.
+        await flushPending()
 
         await crashCollector.uninstall()
         await guardian.stop()
@@ -222,6 +248,7 @@ public actor Beacon {
         let scrubbed = scrubber.scrub(report)
         try await store.save(scrubbed)
         logger.info("Crash report saved: \(scrubbed.reportId)")
+        await flushPending()
     }
 
     /// Scrubs, wraps, and stores a diagnostic report.
@@ -239,6 +266,7 @@ public actor Beacon {
         let scrubbed = scrubber.scrub(report)
         try await store.save(scrubbed)
         logger.info("Diagnostic report saved: \(scrubbed.reportId)")
+        await flushPending()
     }
 
     /// Collects, scrubs, wraps, and stores a feedback report.
@@ -269,6 +297,7 @@ public actor Beacon {
         let scrubbed = scrubber.scrub(report)
         try await store.save(scrubbed)
         logger.info("Feedback report saved: \(scrubbed.reportId)")
+        await flushPending()
     }
 
     // MARK: - Process Guardian
@@ -317,8 +346,7 @@ public actor Beacon {
     ///
     /// - Returns: A summary of the batch send operation.
     public func sendPendingReports() async throws -> SendResult {
-        let sender = ReportSender(config: _config, store: store)
-        return try await sender.sendAllPending()
+        try await sender.sendAllPending()
     }
 
     /// Deletes a single report by ID from the store.
@@ -398,6 +426,21 @@ public actor Beacon {
             try await reportDiagnostic(diagnostic)
         } catch {
             logger.error("Failed to save diagnostic report: \(error.localizedDescription)")
+        }
+    }
+
+    /// Best-effort flush of pending reports. Errors are logged, never thrown.
+    private func flushPending() async {
+        do {
+            let result = try await sender.sendAllPending()
+            if result.sent > 0 {
+                logger.info("Flushed \(result.sent) report(s)")
+            }
+            for err in result.errors {
+                logger.warning("Flush error: \(err)")
+            }
+        } catch {
+            logger.warning("Flush failed: \(error.localizedDescription)")
         }
     }
 }
