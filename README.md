@@ -327,4 +327,4 @@ This is the kind of project where trust matters more than features. Contribution
 
 ---
 
-*Sidereal Beacon is part of the [Sidereal](https://sidereal.cc) platform by [Groupthink](https://github.com/groupthink-dev).*
+*Sidereal Beacon is part of the [Sidereal](https://github.com/groupthink-dev/sidereal) platform by [Groupthink](https://github.com/groupthink-dev).*
