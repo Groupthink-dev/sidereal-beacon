@@ -3,7 +3,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "sidereal-beacon",
+    name: "stallari-beacon",
     platforms: [
         .macOS(.v14),
     ],
