@@ -1,13 +1,13 @@
 <p align="center">
-  <a href="https://sidereal.cc">
-    <img src="assets/sidereal-icon.png" width="128" alt="Sidereal Beacon">
+  <a href="https://stallari.ai">
+    <img src="assets/stallari-icon.png" width="128" alt="Stallari Beacon">
   </a>
 </p>
 
-<h1 align="center">Sidereal Beacon</h1>
+<h1 align="center">Stallari Beacon</h1>
 
 <p align="center">
-  <a href="https://sidereal.cc"><img src="https://img.shields.io/badge/website-sidereal.cc-0066CC" alt="sidereal.cc"></a>
+  <a href="https://stallari.ai"><img src="https://img.shields.io/badge/website-stallari.ai-0066CC" alt="stallari.ai"></a>
   <img src="https://img.shields.io/badge/macOS-14.0%2B-blue" alt="macOS 14.0+">
   <img src="https://img.shields.io/badge/Swift-5.10-F05138" alt="Swift 5.10">
   <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT License">
@@ -15,16 +15,16 @@
 </p>
 
 <p align="center">
-  Privacy-first crash reporting, diagnostics, and feedback for <a href="https://sidereal.cc">Sidereal</a> — the agentic productivity platform for macOS.
+  Privacy-first crash reporting, diagnostics, and feedback for <a href="https://stallari.ai">Stallari</a> — the agentic productivity platform for macOS.
 </p>
 
 ---
 
-Beacon is the open-source telemetry layer that lets Sidereal learn from failures without compromising user trust. Every byte of data collected is defined in this repo, auditable by anyone, and controlled entirely by the user.
+Beacon is the open-source telemetry layer that lets Stallari learn from failures without compromising user trust. Every byte of data collected is defined in this repo, auditable by anyone, and controlled entirely by the user.
 
 ## Why This Exists
 
-Sidereal orchestrates AI agents, MCP servers, and background processes on your Mac. When something goes wrong — a subprocess leaks memory, a dispatch job crashes, the app hangs — **the developer needs to know, and you need to stay in control.**
+Stallari orchestrates AI agents, MCP servers, and background processes on your Mac. When something goes wrong — a subprocess leaks memory, a dispatch job crashes, the app hangs — **the developer needs to know, and you need to stay in control.**
 
 Most crash reporters are black boxes. You can't see what they collect. You can't verify what they send. You just click "Send" and hope.
 
@@ -39,7 +39,7 @@ Beacon is different:
 
 ### Crash Reports
 
-When Sidereal or one of its managed processes crashes, Beacon captures:
+When Stallari or one of its managed processes crashes, Beacon captures:
 
 | Field | Example | Why |
 |-------|---------|-----|
@@ -80,7 +80,7 @@ Beacon provides the transport layer for in-app feedback:
 
 ```
 ┌─────────────────────────────────────────────────┐
-│  Sidereal App                                   │
+│  Stallari App                                   │
 │                                                 │
 │  ┌───────────┐  ┌───────────┐  ┌────────────┐  │
 │  │ Process   │  │  Crash    │  │  Feedback  │  │
@@ -129,7 +129,7 @@ Beacon provides the transport layer for in-app feedback:
 
 ## Process Guardian (Companion Component)
 
-While Beacon handles *reporting*, the Process Guardian (in `sidereal-harness`) handles *prevention*. It enforces:
+While Beacon handles *reporting*, the Process Guardian (in `stallari-harness`) handles *prevention*. It enforces:
 
 | Guardrail | Mechanism |
 |-----------|-----------|
@@ -152,9 +152,9 @@ First Launch
     │
     ▼
 ┌─────────────────────────────────────┐
-│  "Help improve Sidereal"            │
+│  "Help improve Stallari"            │
 │                                     │
-│  Sidereal can send anonymous crash  │
+│  Stallari can send anonymous crash  │
 │  reports when things go wrong.      │
 │                                     │
 │  • You control what's sent          │
@@ -257,8 +257,8 @@ Beacon is one layer in a broader quality practice:
 
 ```bash
 # Clone
-git clone https://github.com/groupthink-dev/sidereal-beacon.git
-cd sidereal-beacon
+git clone https://github.com/groupthink-dev/stallari-beacon.git
+cd stallari-beacon
 
 # Build the SDK (Swift Package)
 swift build
@@ -273,9 +273,9 @@ cd ingest && npm install && npm run build
 ## Project Structure
 
 ```
-sidereal-beacon/
+stallari-beacon/
 ├── Sources/
-│   └── SiderealBeacon/
+│   └── SiderealBeacon/          # P7: module rename pending
 │       ├── Collector/       # Crash + diagnostic data gathering
 │       ├── Scrubber/        # PII removal pipeline
 │       ├── Store/           # Local report persistence
@@ -283,7 +283,7 @@ sidereal-beacon/
 │       ├── Feedback/        # User feedback models
 │       └── Guardian/        # Process resource monitoring
 ├── Tests/
-│   └── SiderealBeaconTests/
+│   └── SiderealBeaconTests/      # P7: module rename pending
 ├── ingest/                  # Cloudflare Worker for report ingestion
 ├── Package.swift
 ├── LICENSE                  # MIT
@@ -308,9 +308,9 @@ Beacon is designed around a simple principle: **the user's machine is theirs, no
 |------|-------|-------------|-------|
 | 2026-04-03 | Initial architecture review | Internal (system-architect) | Scrubber pattern coverage, consent model design, transport security |
 
-This table tracks when `sidereal-beacon` last underwent security and operations analysis. The scrubber module (`Sources/SiderealBeacon/Scrubber/`) is the highest-trust component — any change to scrubber patterns or PII handling should trigger a review.
+This table tracks when `stallari-beacon` last underwent security and operations analysis. The scrubber module (`Sources/SiderealBeacon/Scrubber/`) is the highest-trust component — any change to scrubber patterns or PII handling should trigger a review.
 
-To request an independent audit or report a security concern, open a [security advisory](https://github.com/groupthink-dev/sidereal-beacon/security/advisories/new).
+To request an independent audit or report a security concern, open a [security advisory](https://github.com/groupthink-dev/stallari-beacon/security/advisories/new).
 
 ## License
 
@@ -327,4 +327,4 @@ This is the kind of project where trust matters more than features. Contribution
 
 ---
 
-*Sidereal Beacon is part of the [Sidereal](https://github.com/groupthink-dev/sidereal) platform by [Groupthink](https://github.com/groupthink-dev).*
+*Stallari Beacon is part of the [Stallari](https://github.com/groupthink-dev/stallari) platform by [Groupthink](https://github.com/groupthink-dev).*
