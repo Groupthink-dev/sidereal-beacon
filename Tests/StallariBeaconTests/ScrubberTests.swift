@@ -1,7 +1,7 @@
 import Foundation
 import Testing
 
-@testable import SiderealBeacon
+@testable import StallariBeacon
 
 // MARK: - Scrubber Tests
 
@@ -44,9 +44,9 @@ struct ScrubberTests {
 
     @Test("Scrubs /home/<username>/ paths")
     func linuxHomePathScrubbing() {
-        let input = "/home/deploy/.config/sidereal/beacon"
+        let input = "/home/deploy/.config/stallari/beacon"
         let result = scrubber.scrub(input)
-        #expect(result == "/home/[USER]/.config/sidereal/beacon")
+        #expect(result == "/home/[USER]/.config/stallari/beacon")
     }
 
     @Test("Scrubs tilde paths to consistent format")
@@ -212,8 +212,8 @@ struct ScrubberTests {
     @Test("Scrubs file paths in stack traces while preserving function names")
     func stackTraceScrubbing() {
         let frames = [
-            "0  SiderealHarness  0x0001234  DaemonLifecycleManager.start() + 42",
-            "1  SiderealHarness  0x0005678  /Users/piers/src/sidereal-harness/Sources/Daemon.swift:120",
+            "0  StallariHarness  0x0001234  DaemonLifecycleManager.start() + 42",
+            "1  StallariHarness  0x0005678  /Users/piers/src/stallari-harness/Sources/Daemon.swift:120",
             "2  libswiftCore.dylib  0x0009abc  Swift.Array.map() + 99",
         ]
         let crash = CrashReport(
@@ -244,7 +244,7 @@ struct ScrubberTests {
     @Test("Scrubs PII from breadcrumb details but preserves event names")
     func breadcrumbDetailScrubbing() {
         let breadcrumbs = [
-            Breadcrumb(t: -5.0, event: "mcp.start", detail: "Started at /Users/piers/.config/sidereal"),
+            Breadcrumb(t: -5.0, event: "mcp.start", detail: "Started at /Users/piers/.config/stallari"),
             Breadcrumb(t: -3.0, event: "dispatch.begin", detail: "token=secret123"),
             Breadcrumb(t: -1.0, event: "error", detail: nil),
         ]
@@ -291,8 +291,8 @@ struct ScrubberTests {
                 Breadcrumb(t: -5.0, event: "config.load", detail: "path=/Users/piers/master-ai/.config"),
             ],
             stackTrace: [
-                "0  SiderealHarness  DaemonLifecycleManager.handleMemoryWarning()",
-                "1  SiderealHarness  /Users/piers/src/sidereal-harness/Sources/Guardian/ProcessGuardian.swift:225",
+                "0  StallariHarness  DaemonLifecycleManager.handleMemoryWarning()",
+                "1  StallariHarness  /Users/piers/src/stallari-harness/Sources/Guardian/ProcessGuardian.swift:225",
                 "2  libsystem_malloc  malloc_zone_error",
             ]
         )
@@ -332,7 +332,7 @@ struct ScrubberTests {
         let feedback = FeedbackReport(
             message: "Crash at /Users/piers/Documents/vault when using token=abc123",
             reaction: .broken,
-            contextScreen: "/Users/piers/src/sidereal-harness/Views/Settings",
+            contextScreen: "/Users/piers/src/stallari-harness/Views/Settings",
             includesDiagnosticBundle: false
         )
         let report = makeTestReport(payload: .feedback(feedback))
@@ -360,7 +360,7 @@ struct ScrubberTests {
             totalManagedRssMb: 1024,
             systemMemoryPressure: .warn,
             dispatchStats: DispatchStats(jobsStarted: 10, jobsSucceeded: 8, jobsFailed: 2, since: Date()),
-            mcpAvailability: [MCPStatus(name: "sidereal-blade", isAvailable: true)]
+            mcpAvailability: [MCPStatus(name: "stallari-blade", isAvailable: true)]
         )
         let report = makeTestReport(payload: .diagnostic(diagnostic))
         let scrubbed = scrubber.scrub(report)

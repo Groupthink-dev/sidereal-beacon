@@ -53,7 +53,7 @@ public actor ReportStore {
     /// Creates a report store.
     ///
     /// - Parameter baseDirectory: Override for testing. Defaults to
-    ///   `~/.config/sidereal/beacon/`.
+    ///   `~/.config/stallari/beacon/`.
     public init(baseDirectory: URL? = nil) {
         self.fileManager = .default
         if let baseDirectory {
@@ -61,7 +61,7 @@ public actor ReportStore {
         } else {
             self.baseDirectory = FileManager.default
                 .homeDirectoryForCurrentUser
-                .appendingPathComponent(".config/sidereal/beacon")
+                .appendingPathComponent(".config/stallari/beacon")
         }
     }
 

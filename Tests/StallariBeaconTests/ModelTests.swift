@@ -1,7 +1,7 @@
 import Foundation
 import Testing
 
-@testable import SiderealBeacon
+@testable import StallariBeacon
 
 // MARK: - Model Tests
 
@@ -99,7 +99,7 @@ struct ModelTests {
                 since: Date(timeIntervalSinceReferenceDate: 799_000_000)
             ),
             mcpAvailability: [
-                MCPStatus(name: "sidereal-blade", isAvailable: true),
+                MCPStatus(name: "stallari-blade", isAvailable: true),
                 MCPStatus(name: "fastmail-blade", isAvailable: false),
             ]
         )
@@ -217,7 +217,7 @@ struct ModelTests {
         #expect(config.crashReportsEnabled == false)
         #expect(config.diagnosticsEnabled == false)
         #expect(config.reviewBeforeSending == true)
-        #expect(config.ingestUrl == "https://beacon.sidereal.cc/api/v1/reports")
+        #expect(config.ingestUrl == "https://beacon.stallari.app/api/v1/reports")
         #expect(!config.deviceId.isEmpty)
     }
 

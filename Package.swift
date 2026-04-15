@@ -8,17 +8,17 @@ let package = Package(
         .macOS(.v14),
     ],
     products: [
-        .library(name: "SiderealBeacon", targets: ["SiderealBeacon"]),
+        .library(name: "StallariBeacon", targets: ["StallariBeacon"]),
     ],
     targets: [
         .target(
-            name: "SiderealBeacon",
-            path: "Sources/SiderealBeacon"
+            name: "StallariBeacon",
+            path: "Sources/StallariBeacon"
         ),
         .testTarget(
-            name: "SiderealBeaconTests",
-            dependencies: ["SiderealBeacon"],
-            path: "Tests/SiderealBeaconTests"
+            name: "StallariBeaconTests",
+            dependencies: ["StallariBeacon"],
+            path: "Tests/StallariBeaconTests"
         ),
     ]
 )

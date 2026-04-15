@@ -1,14 +1,14 @@
-// MARK: - SiderealBeacon Public API Exports
+// MARK: - StallariBeacon Public API Exports
 //
 // Barrel file for convenient single-import access to all public types.
-// Consumers write `import SiderealBeacon` and get everything they need.
+// Consumers write `import StallariBeacon` and get everything they need.
 
 // Foundation is already imported transitively by every source file in the
 // module. An `@_exported import Foundation` here would re-export Foundation's
-// entire namespace through SiderealBeacon, which is intentionally avoided —
+// entire namespace through StallariBeacon, which is intentionally avoided —
 // consumers should import Foundation themselves if they need it directly.
 
-// All public types are accessible via `import SiderealBeacon`:
+// All public types are accessible via `import StallariBeacon`:
 //
 // Orchestrator:
 //   - Beacon                    (public actor — top-level entry point)

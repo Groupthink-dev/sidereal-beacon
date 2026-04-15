@@ -1,6 +1,6 @@
 import Foundation
 
-/// User preferences for Beacon. Persisted to `~/.config/sidereal/beacon/config.json`.
+/// User preferences for Beacon. Persisted to `~/.config/stallari/beacon/config.json`.
 ///
 /// All telemetry is **opt-in** — both `crashReportsEnabled` and `diagnosticsEnabled`
 /// default to `false`. The `reviewBeforeSending` flag (default `true`) ensures the user
@@ -25,7 +25,7 @@ public struct BeaconConfig: Codable, Sendable, Equatable {
         crashReportsEnabled: Bool = true,
         diagnosticsEnabled: Bool = true,
         reviewBeforeSending: Bool = true,
-        ingestUrl: String = "https://beacon.sidereal.cc/api/v1/reports",
+        ingestUrl: String = "https://beacon.stallari.app/api/v1/reports",
         deviceId: String = UUID().uuidString
     ) {
         self.crashReportsEnabled = crashReportsEnabled
@@ -47,7 +47,7 @@ public struct BeaconConfig: Codable, Sendable, Equatable {
 
     private static var configDirectory: URL {
         FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent(".config/sidereal/beacon", isDirectory: true)
+            .appendingPathComponent(".config/stallari/beacon", isDirectory: true)
     }
 
     private static var configFileURL: URL {

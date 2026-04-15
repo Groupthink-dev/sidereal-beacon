@@ -1,7 +1,7 @@
 import Foundation
 import Testing
 
-@testable import SiderealBeacon
+@testable import StallariBeacon
 
 // MARK: - Consent Tests
 

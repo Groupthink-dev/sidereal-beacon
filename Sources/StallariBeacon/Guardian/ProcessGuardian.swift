@@ -8,7 +8,7 @@ public struct ManagedProcess: Sendable {
     /// POSIX process identifier.
     public let pid: pid_t
 
-    /// Human-readable name (e.g. "sidereal-blade", "obsidian-lens").
+    /// Human-readable name (e.g. "stallari-blade", "obsidian-lens").
     public let name: String
 
     /// Per-process RSS ceiling in megabytes. 0 = no limit.

@@ -35,7 +35,7 @@ public struct DispatchStats: Codable, Sendable, Equatable {
 
 /// Availability status of a single MCP server.
 public struct MCPStatus: Codable, Sendable, Equatable {
-    /// MCP server name (e.g. "sidereal-blade", "fastmail-blade").
+    /// MCP server name (e.g. "stallari-blade", "fastmail-blade").
     public let name: String
 
     /// Whether the MCP server is currently reachable.

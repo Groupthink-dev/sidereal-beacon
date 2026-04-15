@@ -46,7 +46,7 @@ When Stallari or one of its managed processes crashes, Beacon captures:
 | App version | `0.44.3.3` | Which release is affected |
 | macOS version | `26.3.0` | OS-specific bugs |
 | Crash type | `memory_pressure`, `signal_abort`, `unhandled_exception` | Root cause classification |
-| Component | `daemon`, `mcp.sidereal-blade`, `dispatch.daily-digest` | Which subsystem failed |
+| Component | `daemon`, `mcp.stallari-blade`, `dispatch.daily-digest` | Which subsystem failed |
 | Resource snapshot | `rss_mb: 2048, cpu_percent: 98` | Was it a resource issue? |
 | Breadcrumbs | `[dispatch_start, mcp_connect, memory_warning, ...]` | What happened leading up to the crash |
 | Stack trace (symbolicated) | Top 20 frames | Where in the code it failed |
@@ -95,7 +95,7 @@ Beacon provides the transport layer for in-app feedback:
 │  └─────────────┬───────────────────────────┘    │
 │                │                                │
 │                ▼                                │
-│  ~/.config/sidereal/beacon/                     │
+│  ~/.config/stallari/beacon/                     │
 │  ├── pending/          # Reports awaiting send  │
 │  ├── sent/             # Sent (pruned at 30d)   │
 │  └── config.json       # User preferences       │
@@ -123,7 +123,7 @@ Beacon provides the transport layer for in-app feedback:
 
 **Scrubber** — Strips PII before the report ever hits disk. Applies regex patterns for emails, file paths, API keys, and custom exclusion rules. Aggressively conservative: if in doubt, redact.
 
-**Store** — Writes reports as human-readable JSON to `~/.config/sidereal/beacon/pending/`. Users can open, inspect, edit, or delete any report before it's sent.
+**Store** — Writes reports as human-readable JSON to `~/.config/stallari/beacon/pending/`. Users can open, inspect, edit, or delete any report before it's sent.
 
 **Sender** — Transmits consented reports over HTTPS. Retries with exponential backoff. Reports are immutable after consent — the server receives exactly what the user approved.
 
@@ -189,7 +189,7 @@ Reports use a structured JSON format designed for both human readability and mac
   "timestamp": "2026-04-03T09:15:00+10:00",
   "app": {
     "version": "0.44.3.3",
-    "component": "daemon.mcp.sidereal-blade"
+    "component": "daemon.mcp.stallari-blade"
   },
   "system": {
     "os_version": "26.3.0",
@@ -215,8 +215,8 @@ Reports use a structured JSON format designed for both human readability and mac
       { "t": 0,    "event": "crash", "detail": "jetsam" }
     ],
     "stack_trace": [
-      "0: SiderealDaemon.ProcessManager.spawn(_:) + 0x1a4",
-      "1: SiderealDaemon.MCPCoordinator.startServer(_:) + 0x88",
+      "0: StallariDaemon.ProcessManager.spawn(_:) + 0x1a4",
+      "1: StallariDaemon.MCPCoordinator.startServer(_:) + 0x88",
       "..."
     ]
   }
@@ -237,7 +237,7 @@ Beacon includes a tiered feedback mechanism designed for all user types:
 
 ### For Technical Users
 - **Diagnostic bundle** — one-click export of recent Beacon reports, process state, and (redacted) logs. User reviews contents before sending.
-- **Beacon CLI** — `sidereal-cli beacon list`, `beacon inspect <id>`, `beacon send <id>`, `beacon export`. Full control from the terminal.
+- **Beacon CLI** — `stallari-cli beacon list`, `beacon inspect <id>`, `beacon send <id>`, `beacon export`. Full control from the terminal.
 - **GitHub Issues integration** — "Open as GitHub Issue" pre-fills a template with the diagnostic context (after user review).
 
 ## Integration with DevOps
@@ -275,15 +275,14 @@ cd ingest && npm install && npm run build
 ```
 stallari-beacon/
 ├── Sources/
-│   └── SiderealBeacon/          # P7: module rename pending
-│       ├── Collector/       # Crash + diagnostic data gathering
+│   └── StallariBeacon/│       ├── Collector/       # Crash + diagnostic data gathering
 │       ├── Scrubber/        # PII removal pipeline
 │       ├── Store/           # Local report persistence
 │       ├── Sender/          # HTTPS transport
 │       ├── Feedback/        # User feedback models
 │       └── Guardian/        # Process resource monitoring
 ├── Tests/
-│   └── SiderealBeaconTests/      # P7: module rename pending
+│   └── StallariBeaconTests/      # P7: module rename pending
 ├── ingest/                  # Cloudflare Worker for report ingestion
 ├── Package.swift
 ├── LICENSE                  # MIT
@@ -308,7 +307,7 @@ Beacon is designed around a simple principle: **the user's machine is theirs, no
 |------|-------|-------------|-------|
 | 2026-04-03 | Initial architecture review | Internal (system-architect) | Scrubber pattern coverage, consent model design, transport security |
 
-This table tracks when `stallari-beacon` last underwent security and operations analysis. The scrubber module (`Sources/SiderealBeacon/Scrubber/`) is the highest-trust component — any change to scrubber patterns or PII handling should trigger a review.
+This table tracks when `stallari-beacon` last underwent security and operations analysis. The scrubber module (`Sources/StallariBeacon/Scrubber/`) is the highest-trust component — any change to scrubber patterns or PII handling should trigger a review.
 
 To request an independent audit or report a security concern, open a [security advisory](https://github.com/groupthink-dev/stallari-beacon/security/advisories/new).
 

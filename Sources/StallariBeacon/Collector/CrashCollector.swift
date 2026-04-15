@@ -160,7 +160,7 @@ public actor CrashCollector {
     /// - Parameters:
     ///   - breadcrumbs: The shared breadcrumb trail for crash context.
     ///   - stagingDirectory: Override for crash staging files. Defaults to
-    ///     `~/.config/sidereal/beacon/staging/`.
+    ///     `~/.config/stallari/beacon/staging/`.
     public init(
         breadcrumbs: BreadcrumbTrail,
         stagingDirectory: URL? = nil
@@ -171,7 +171,7 @@ public actor CrashCollector {
         } else {
             self.stagingDirectory = FileManager.default
                 .homeDirectoryForCurrentUser
-                .appendingPathComponent(".config/sidereal/beacon/staging")
+                .appendingPathComponent(".config/stallari/beacon/staging")
         }
     }
 

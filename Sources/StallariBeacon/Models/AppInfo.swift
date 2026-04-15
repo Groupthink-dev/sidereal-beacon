@@ -5,7 +5,7 @@ public struct AppInfo: Codable, Sendable, Equatable {
     /// Semantic version of the reporting app (e.g. "0.44.3.3").
     public let version: String
 
-    /// Component identifier (e.g. "daemon", "mcp.sidereal-blade", "dispatch.daily-digest").
+    /// Component identifier (e.g. "daemon", "mcp.stallari-blade", "dispatch.daily-digest").
     public let component: String
 
     public init(version: String, component: String) {

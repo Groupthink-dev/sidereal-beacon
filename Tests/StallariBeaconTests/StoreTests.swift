@@ -1,7 +1,7 @@
 import Foundation
 import Testing
 
-@testable import SiderealBeacon
+@testable import StallariBeacon
 
 // MARK: - Store Tests
 
@@ -11,7 +11,7 @@ struct StoreTests {
     /// Creates a temp directory for test isolation and returns the store and cleanup closure.
     private func makeStore() -> (store: ReportStore, cleanup: @Sendable () -> Void) {
         let tempDir = FileManager.default.temporaryDirectory
-            .appendingPathComponent("sidereal-beacon-tests-\(UUID().uuidString)")
+            .appendingPathComponent("stallari-beacon-tests-\(UUID().uuidString)")
         let store = ReportStore(baseDirectory: tempDir)
         let cleanup: @Sendable () -> Void = {
             try? FileManager.default.removeItem(at: tempDir)

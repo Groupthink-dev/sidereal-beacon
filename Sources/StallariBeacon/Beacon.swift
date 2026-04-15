@@ -43,7 +43,7 @@ private actor BeaconGuardianBridge: ProcessGuardianProvider {
 
 // MARK: - Beacon
 
-/// Top-level orchestrator for the Sidereal Beacon crash reporting SDK.
+/// Top-level orchestrator for the Stallari Beacon crash reporting SDK.
 ///
 /// `Beacon` owns every subsystem (config, scrubber, store, sender, crash
 /// collector, process guardian, circuit breaker, diagnostic collector, feedback
@@ -79,7 +79,7 @@ public actor Beacon {
     private let feedbackCollector: FeedbackCollector
     private let diagnosticCollector: DiagnosticCollector
 
-    private let logger = Logger(subsystem: "cc.sidereal.beacon", category: "Beacon")
+    private let logger = Logger(subsystem: "ai.stallari.beacon", category: "Beacon")
 
     /// Whether `start()` has been called (and `stop()` has not).
     private var isRunning = false
@@ -99,7 +99,7 @@ public actor Beacon {
     ///
     /// - Parameters:
     ///   - appVersion: Semantic version of the host app (e.g. "0.44.3.3").
-    ///   - component: Component identifier (e.g. "daemon", "mcp.sidereal-blade").
+    ///   - component: Component identifier (e.g. "daemon", "mcp.stallari-blade").
     ///   - customScrubPatterns: Optional additional PII patterns for the scrubber.
     /// - Returns: A configured ``Beacon`` instance. Call ``start()`` to activate.
     public static func configure(
