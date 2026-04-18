@@ -35,6 +35,14 @@ public struct ConsentGate: Sendable {
         true
     }
 
+    /// Whether security reports can be sent.
+    ///
+    /// Always returns `true` — security events indicate potential guardrail
+    /// integrity issues and must never be suppressed by user consent.
+    public func canSendSecurityReports() -> Bool {
+        true
+    }
+
     /// Verify that the given report is allowed under the current consent
     /// settings.
     ///
@@ -48,6 +56,8 @@ public struct ConsentGate: Sendable {
             guard canSendDiagnostics() else { throw SendError.notConsented }
         case .feedback:
             break // Always allowed.
+        case .security:
+            break // Always allowed — integrity events must not be suppressed.
         }
     }
 }

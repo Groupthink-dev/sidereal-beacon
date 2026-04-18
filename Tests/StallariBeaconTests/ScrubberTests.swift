@@ -415,6 +415,7 @@ struct ScrubberTests {
         case .crash: type = .crash
         case .diagnostic: type = .diagnostic
         case .feedback: type = .feedback
+        case .security: type = .security
         }
         return BeaconReport(
             reportId: "brpt_testtest",

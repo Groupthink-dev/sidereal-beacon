@@ -41,6 +41,12 @@ struct StoreTests {
             ))
         case .feedback:
             payload = .feedback(FeedbackReport(message: "Test feedback", reaction: .works))
+        case .security:
+            payload = .security(SecurityReport(
+                eventType: .guardrailHashMismatch,
+                detail: "Test security event",
+                baselineVersion: "1.0.0"
+            ))
         }
 
         return BeaconReport(

@@ -7,6 +7,7 @@ public enum ReportType: String, Codable, Sendable {
     case crash
     case diagnostic
     case feedback
+    case security
 }
 
 // MARK: - ReportPayload
@@ -16,6 +17,7 @@ public enum ReportPayload: Sendable, Equatable {
     case crash(CrashReport)
     case diagnostic(DiagnosticReport)
     case feedback(FeedbackReport)
+    case security(SecurityReport)
 }
 
 // MARK: - BeaconReport
@@ -115,6 +117,8 @@ extension BeaconReport: Codable {
             try container.encode(report, forKey: .payload)
         case .feedback(let report):
             try container.encode(report, forKey: .payload)
+        case .security(let report):
+            try container.encode(report, forKey: .payload)
         }
     }
 
@@ -135,6 +139,8 @@ extension BeaconReport: Codable {
             payload = .diagnostic(try container.decode(DiagnosticReport.self, forKey: .payload))
         case .feedback:
             payload = .feedback(try container.decode(FeedbackReport.self, forKey: .payload))
+        case .security:
+            payload = .security(try container.decode(SecurityReport.self, forKey: .payload))
         }
     }
 }

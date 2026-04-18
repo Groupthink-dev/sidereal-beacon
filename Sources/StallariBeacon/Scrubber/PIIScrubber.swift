@@ -80,6 +80,8 @@ public struct PIIScrubber: Sendable {
             .diagnostic(diagnostic) // Numeric fields + controlled vocabulary — no PII
         case .feedback(let feedback):
             .feedback(scrubFeedbackReport(feedback))
+        case .security(let security):
+            .security(security) // Controlled vocabulary + version strings — no PII
         }
 
         return BeaconReport(

@@ -130,6 +130,12 @@ struct ConsentTests {
             ))
         case .feedback:
             payload = .feedback(FeedbackReport(message: "Test"))
+        case .security:
+            payload = .security(SecurityReport(
+                eventType: .guardrailHashMismatch,
+                detail: "Test",
+                baselineVersion: "1.0.0"
+            ))
         }
 
         return BeaconReport(

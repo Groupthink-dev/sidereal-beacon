@@ -15,7 +15,7 @@
 //
 // Models:
 //   - BeaconReport              (report envelope)
-//   - ReportType                (crash | diagnostic | feedback)
+//   - ReportType                (crash | diagnostic | feedback | security)
 //   - ReportPayload             (associated payload enum)
 //   - AppInfo                   (app metadata)
 //   - SystemInfo                (system metadata)
@@ -27,6 +27,8 @@
 //   - MCPStatus                 (MCP server availability)
 //   - FeedbackReport            (feedback payload)
 //   - ReactionType              (feedback sentiment)
+//   - SecurityReport            (security payload)
+//   - SecurityEventType         (security event classification)
 //   - Breadcrumb                (crash timeline event)
 //   - ResourceSnapshot          (point-in-time resource state)
 //   - BeaconConfig              (user preferences)
