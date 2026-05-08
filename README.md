@@ -1,6 +1,9 @@
 <p align="center">
   <a href="https://stallari.ai">
-    <img src="assets/stallari-icon.png" width="128" alt="Stallari Beacon">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="assets/stallari-logo-dark.png">
+      <img src="assets/stallari-logo-light.png" alt="Stallari Beacon" width="320">
+    </picture>
   </a>
 </p>
 
