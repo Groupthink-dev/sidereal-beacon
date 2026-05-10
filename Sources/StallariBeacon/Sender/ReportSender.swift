@@ -51,6 +51,7 @@ public actor ReportSender {
     private let store: ReportStore
     private let session: URLSession
     private let gate: ConsentGate
+    private let outboundGate: OutboundGate?
     private let encoder: JSONEncoder
 
     /// Create a sender wired to the given config and local report store.
@@ -59,11 +60,22 @@ public actor ReportSender {
     ///   - config: Beacon configuration (ingest URL, consent state).
     ///   - store: Local report persistence layer.
     ///   - session: URL session to use for HTTP calls. Defaults to `.shared`.
-    public init(config: BeaconConfig, store: ReportStore, session: URLSession = .shared) {
+    ///   - outboundGate: Per-flush verdict closure honouring DD-270's user
+    ///     mode setting. `nil` means the gate is bypassed — every batch
+    ///     flush proceeds as `.permitted`. Existing SDK consumers that
+    ///     pre-date the gate work unchanged; the harness wires a real
+    ///     closure at daemon boot.
+    public init(
+        config: BeaconConfig,
+        store: ReportStore,
+        session: URLSession = .shared,
+        outboundGate: OutboundGate? = nil
+    ) {
         self.config = config
         self.store = store
         self.session = session
         self.gate = ConsentGate(config: config)
+        self.outboundGate = outboundGate
 
         let enc = JSONEncoder()
         enc.outputFormatting = [.sortedKeys]
@@ -170,6 +182,31 @@ public actor ReportSender {
         }
     }
 
+    // MARK: - Outbound gate
+
+    /// Consult the host-supplied ``OutboundGate`` and return the pending
+    /// reports that would be flushed under the current verdict.
+    ///
+    /// - `.suppressed` → returns `[]` without consulting the store.
+    /// - `.crashOnly` → returns only pending reports with `.crash` payload.
+    /// - `.permitted` (or no gate wired) → returns the full pending list.
+    ///
+    /// Public so tests can verify the gate behaviour without mocking
+    /// ``URLSession``. Phase 0 chokepoint per
+    /// `[[DD-270-implementation-plan]]`.
+    public func sendableReports() async throws -> [BeaconReport] {
+        let decision = await outboundGate?() ?? .permitted
+        switch decision {
+        case .suppressed:
+            return []
+        case .crashOnly:
+            let all = try await store.listPending()
+            return all.filter { $0.type == .crash }
+        case .permitted:
+            return try await store.listPending()
+        }
+    }
+
     // MARK: - Batch send
 
     /// Attempt to send all pending reports, returning a summary.
@@ -177,8 +214,13 @@ public actor ReportSender {
     /// Each report is sent with retry. Failures for individual reports do
     /// not abort the batch — the caller receives a ``SendResult`` describing
     /// what succeeded and what did not.
+    ///
+    /// The host-supplied ``OutboundGate`` is consulted *before* any network
+    /// I/O — when the verdict is `.suppressed` the method returns
+    /// `SendResult(sent: 0, failed: 0, errors: [])` without ever touching
+    /// the store loop or the URL session. DD-270 Phase 0 / convention #19.
     public func sendAllPending() async throws -> SendResult {
-        let pending = try await store.listPending()
+        let pending = try await sendableReports()
 
         var sent = 0
         var failed = 0

@@ -105,12 +105,18 @@ public actor Beacon {
     public static func configure(
         appVersion: String,
         component: String,
-        customScrubPatterns: [(pattern: String, replacement: String)] = []
+        customScrubPatterns: [(pattern: String, replacement: String)] = [],
+        outboundGate: OutboundGate? = nil
     ) async -> Beacon {
         let config = BeaconConfig.load()
         let app = AppInfo(version: appVersion, component: component)
 
-        return Beacon(config: config, appInfo: app, customScrubPatterns: customScrubPatterns)
+        return Beacon(
+            config: config,
+            appInfo: app,
+            customScrubPatterns: customScrubPatterns,
+            outboundGate: outboundGate
+        )
     }
 
     // MARK: - Init
@@ -126,14 +132,19 @@ public actor Beacon {
         customScrubPatterns: [(pattern: String, replacement: String)] = [],
         store: ReportStore? = nil,
         guardian: ProcessGuardian? = nil,
-        circuitBreaker: CircuitBreaker? = nil
+        circuitBreaker: CircuitBreaker? = nil,
+        outboundGate: OutboundGate? = nil
     ) {
         self._config = config
         self.appInfo = appInfo
         self.scrubber = PIIScrubber(customPatterns: customScrubPatterns)
         let storeInstance = store ?? ReportStore()
         self.store = storeInstance
-        self.sender = ReportSender(config: config, store: storeInstance)
+        self.sender = ReportSender(
+            config: config,
+            store: storeInstance,
+            outboundGate: outboundGate
+        )
         self.breadcrumbs = BreadcrumbTrail()
         self.crashCollector = CrashCollector(breadcrumbs: breadcrumbs)
 
