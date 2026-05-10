@@ -48,7 +48,7 @@ public struct SendResult: Sendable, Equatable {
 public actor ReportSender {
 
     private let config: BeaconConfig
-    private let store: ReportStore
+    private let store: any ReportStore
     private let session: URLSession
     private let gate: ConsentGate
     private let outboundGate: OutboundGate?
@@ -58,7 +58,9 @@ public actor ReportSender {
     ///
     /// - Parameters:
     ///   - config: Beacon configuration (ingest URL, consent state).
-    ///   - store: Local report persistence layer.
+    ///   - store: Local report persistence layer (protocol-typed since
+    ///     DD-270 Phase A — file-backed default, harness injects
+    ///     `EncryptedReportStore`).
     ///   - session: URL session to use for HTTP calls. Defaults to `.shared`.
     ///   - outboundGate: Per-flush verdict closure honouring DD-270's user
     ///     mode setting. `nil` means the gate is bypassed — every batch
@@ -67,7 +69,7 @@ public actor ReportSender {
     ///     closure at daemon boot.
     public init(
         config: BeaconConfig,
-        store: ReportStore,
+        store: any ReportStore,
         session: URLSession = .shared,
         outboundGate: OutboundGate? = nil
     ) {

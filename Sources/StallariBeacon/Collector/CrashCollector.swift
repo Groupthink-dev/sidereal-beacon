@@ -160,7 +160,7 @@ public actor CrashCollector {
     /// - Parameters:
     ///   - breadcrumbs: The shared breadcrumb trail for crash context.
     ///   - stagingDirectory: Override for crash staging files. Defaults to
-    ///     `~/.config/stallari/beacon/staging/`.
+    ///     ``BeaconPaths/directory(for:)`` with `.beaconCrashStaging`.
     public init(
         breadcrumbs: BreadcrumbTrail,
         stagingDirectory: URL? = nil
@@ -169,9 +169,7 @@ public actor CrashCollector {
         if let stagingDirectory {
             self.stagingDirectory = stagingDirectory
         } else {
-            self.stagingDirectory = FileManager.default
-                .homeDirectoryForCurrentUser
-                .appendingPathComponent(".config/stallari/beacon/staging")
+            self.stagingDirectory = BeaconPaths.directory(for: .beaconCrashStaging)
         }
     }
 

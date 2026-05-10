@@ -20,8 +20,7 @@ public struct InstallID: Sendable {
     public static let expectedLength = 20
 
     private static var configDirectory: URL {
-        FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent(".config/stallari/beacon", isDirectory: true)
+        BeaconPaths.directory(for: .beaconRoot)
     }
 
     private static var installIdURL: URL {

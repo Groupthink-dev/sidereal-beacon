@@ -9,283 +9,68 @@ public enum ReportStoreError: Error, Sendable {
     case readFailed(path: String, underlying: Error)
     case reportNotFound(reportId: String)
     case deleteFailed(reportId: String, underlying: Error)
+    case cryptoUnavailable
 }
 
-// MARK: - ReportStore
+// MARK: - ReportStore protocol
 
-/// Persists ``BeaconReport`` instances as human-readable JSON files on disk.
+/// Persists ``BeaconReport`` instances pending user-gated outbound flush.
 ///
-/// Reports flow through two directories:
-/// - `pending/` — awaiting user consent and transmission
-/// - `sent/` — successfully transmitted, pruned after 30 days
+/// Conforming types implement durable storage of beacon reports. FabricNerve
+/// ships ``FileReportStore`` as the default (JSON files on disk). Daemon
+/// integrations in ``stallari-harness`` provide an encrypted-at-rest
+/// implementation (``EncryptedReportStore`` in StallariKit, SQLCipher-backed
+/// via DD-247). External SDK consumers MAY conform their own backend.
 ///
-/// Each report is stored as `{report_id}.json` with pretty-printed, sorted-key
-/// JSON so that users can inspect reports in any text editor.
-public actor ReportStore {
+/// All methods are `async throws` so conforming types may be actors *or*
+/// classes with internal synchronisation around a shared connection.
+///
+/// **DD-270 substrate.** This protocol replaces the original concrete
+/// `actor ReportStore` from FabricNerve 0.x. The dependency inversion lets
+/// FabricNerve preserve its zero-external-deps invariant while StallariKit
+/// supplies the daemon's encrypted persistence layer.
+///
+/// **External SDK consumers.** If you don't provide a `reportStore` to
+/// ``Beacon/configure(appVersion:component:customScrubPatterns:outboundGate:reportStore:pathResolver:)``,
+/// a file-backed ``FileReportStore`` is used. Encrypted persistence (SQLCipher)
+/// lives in `stallari-harness/StallariKit` and is not available to external
+/// SDK consumers — bring your own ``ReportStore`` if you need durable
+/// encrypted storage.
+public protocol ReportStore: Sendable {
+    /// Writes a report to the pending queue.
+    func save(_ report: BeaconReport) async throws
 
-    // MARK: - Properties
-
-    private let baseDirectory: URL
-    private let fileManager: FileManager
-
-    private var pendingDirectory: URL { baseDirectory.appendingPathComponent("pending") }
-    private var sentDirectory: URL { baseDirectory.appendingPathComponent("sent") }
-
-    private var directoriesCreated = false
-
-    // MARK: - Codecs
-
-    private let encoder: JSONEncoder = {
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        encoder.dateEncodingStrategy = .iso8601
-        return encoder
-    }()
-
-    private let decoder: JSONDecoder = {
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        return decoder
-    }()
-
-    // MARK: - Init
-
-    /// Creates a report store.
-    ///
-    /// - Parameter baseDirectory: Override for testing. Defaults to
-    ///   `~/.config/stallari/beacon/`.
-    public init(baseDirectory: URL? = nil) {
-        self.fileManager = .default
-        if let baseDirectory {
-            self.baseDirectory = baseDirectory
-        } else {
-            self.baseDirectory = FileManager.default
-                .homeDirectoryForCurrentUser
-                .appendingPathComponent(".config/stallari/beacon")
-        }
-    }
-
-    // MARK: - Public API
-
-    /// Writes a report to the `pending/` directory.
-    public func save(_ report: BeaconReport) async throws {
-        try ensureDirectories()
-        let data = try encodeReport(report)
-        let url = pendingDirectory.appendingPathComponent("\(report.reportId).json")
-        do {
-            try data.write(to: url, options: .atomic)
-        } catch {
-            throw ReportStoreError.writeFailed(reportId: report.reportId, underlying: error)
-        }
-    }
-
-    /// Returns all pending reports, sorted by timestamp descending (newest first).
-    public func listPending() async throws -> [BeaconReport] {
-        try loadReports(from: pendingDirectory)
-            .sorted { $0.timestamp > $1.timestamp }
-    }
+    /// Returns all pending reports, newest first.
+    func listPending() async throws -> [BeaconReport]
 
     /// Returns all sent reports.
-    public func listSent() async throws -> [BeaconReport] {
-        try loadReports(from: sentDirectory)
-    }
+    func listSent() async throws -> [BeaconReport]
 
-    /// Finds a report by ID in either `pending/` or `sent/`.
-    ///
+    /// Finds a report by ID in either pending or sent.
     /// Returns `nil` if no report with the given ID exists.
-    public func get(_ reportId: String) async throws -> BeaconReport? {
-        if let report = try loadReport(id: reportId, from: pendingDirectory) {
-            return report
-        }
-        return try loadReport(id: reportId, from: sentDirectory)
-    }
+    func get(_ reportId: String) async throws -> BeaconReport?
 
-    /// Deletes a report by ID from either `pending/` or `sent/`.
-    public func delete(_ reportId: String) async throws {
-        let filename = "\(reportId).json"
-        let pendingURL = pendingDirectory.appendingPathComponent(filename)
-        let sentURL = sentDirectory.appendingPathComponent(filename)
+    /// Deletes a report by ID.
+    func delete(_ reportId: String) async throws
 
-        if fileManager.fileExists(atPath: pendingURL.path) {
-            do {
-                try fileManager.removeItem(at: pendingURL)
-                return
-            } catch {
-                throw ReportStoreError.deleteFailed(reportId: reportId, underlying: error)
-            }
-        }
+    /// Moves a report from pending to sent.
+    func markSent(_ reportId: String) async throws
 
-        if fileManager.fileExists(atPath: sentURL.path) {
-            do {
-                try fileManager.removeItem(at: sentURL)
-                return
-            } catch {
-                throw ReportStoreError.deleteFailed(reportId: reportId, underlying: error)
-            }
-        }
-
-        throw ReportStoreError.reportNotFound(reportId: reportId)
-    }
-
-    /// Moves a report from `pending/` to `sent/`.
-    public func markSent(_ reportId: String) async throws {
-        try ensureDirectories()
-        let filename = "\(reportId).json"
-        let source = pendingDirectory.appendingPathComponent(filename)
-        let destination = sentDirectory.appendingPathComponent(filename)
-
-        guard fileManager.fileExists(atPath: source.path) else {
-            throw ReportStoreError.reportNotFound(reportId: reportId)
-        }
-
-        do {
-            // Remove any existing file at the destination (re-send scenario).
-            if fileManager.fileExists(atPath: destination.path) {
-                try fileManager.removeItem(at: destination)
-            }
-            try fileManager.moveItem(at: source, to: destination)
-        } catch {
-            throw ReportStoreError.writeFailed(reportId: reportId, underlying: error)
-        }
-    }
-
-    /// Deletes sent reports older than the given number of days.
-    ///
-    /// - Returns: The number of reports deleted.
+    /// Deletes sent reports older than `days` days. Returns count deleted.
     @discardableResult
-    public func pruneSent(olderThan days: Int = 30) async throws -> Int {
-        let cutoff = Date().addingTimeInterval(-Double(days) * 86_400)
-        let reports = try loadReports(from: sentDirectory)
-        var deleted = 0
+    func pruneSent(olderThan days: Int) async throws -> Int
 
-        for report in reports where report.timestamp < cutoff {
-            let url = sentDirectory.appendingPathComponent("\(report.reportId).json")
-            do {
-                try fileManager.removeItem(at: url)
-                deleted += 1
-            } catch {
-                throw ReportStoreError.deleteFailed(reportId: report.reportId, underlying: error)
-            }
-        }
+    /// Removes all reports.
+    func deleteAll() async throws
 
-        return deleted
-    }
+    /// Returns the number of reports awaiting send.
+    func pendingCount() async throws -> Int
+}
 
-    /// Removes all reports from both `pending/` and `sent/`.
-    ///
-    /// Intended for the "Delete all data" user action.
-    public func deleteAll() async throws {
-        try removeContents(of: pendingDirectory)
-        try removeContents(of: sentDirectory)
-    }
-
-    /// Returns the number of reports awaiting consent/send.
-    public func pendingCount() async throws -> Int {
-        guard fileManager.fileExists(atPath: pendingDirectory.path) else { return 0 }
-        do {
-            let contents = try fileManager.contentsOfDirectory(
-                at: pendingDirectory,
-                includingPropertiesForKeys: nil
-            )
-            return contents.filter { $0.pathExtension == "json" }.count
-        } catch {
-            throw ReportStoreError.readFailed(path: pendingDirectory.path, underlying: error)
-        }
-    }
-
-    // MARK: - Private Helpers
-
-    /// Creates `pending/` and `sent/` directories if they don't already exist.
-    private func ensureDirectories() throws {
-        guard !directoriesCreated else { return }
-        for directory in [pendingDirectory, sentDirectory] {
-            do {
-                try fileManager.createDirectory(
-                    at: directory,
-                    withIntermediateDirectories: true
-                )
-            } catch {
-                throw ReportStoreError.directoryCreationFailed(
-                    path: directory.path,
-                    underlying: error
-                )
-            }
-        }
-        directoriesCreated = true
-    }
-
-    /// Encodes a report to pretty-printed JSON data.
-    private func encodeReport(_ report: BeaconReport) throws -> Data {
-        do {
-            return try encoder.encode(report)
-        } catch {
-            throw ReportStoreError.writeFailed(reportId: report.reportId, underlying: error)
-        }
-    }
-
-    /// Loads a single report by ID from a directory, returning `nil` if the file
-    /// doesn't exist.
-    private func loadReport(id: String, from directory: URL) throws -> BeaconReport? {
-        let url = directory.appendingPathComponent("\(id).json")
-        guard fileManager.fileExists(atPath: url.path) else { return nil }
-        do {
-            let data = try Data(contentsOf: url)
-            return try decoder.decode(BeaconReport.self, from: data)
-        } catch {
-            throw ReportStoreError.readFailed(path: url.path, underlying: error)
-        }
-    }
-
-    /// Loads and decodes all `.json` reports in a directory.
-    ///
-    /// Returns an empty array if the directory doesn't exist yet.
-    private func loadReports(from directory: URL) throws -> [BeaconReport] {
-        guard fileManager.fileExists(atPath: directory.path) else { return [] }
-        let urls: [URL]
-        do {
-            urls = try fileManager.contentsOfDirectory(
-                at: directory,
-                includingPropertiesForKeys: nil
-            )
-        } catch {
-            throw ReportStoreError.readFailed(path: directory.path, underlying: error)
-        }
-
-        return try urls
-            .filter { $0.pathExtension == "json" }
-            .map { url in
-                do {
-                    let data = try Data(contentsOf: url)
-                    return try decoder.decode(BeaconReport.self, from: data)
-                } catch {
-                    throw ReportStoreError.readFailed(path: url.path, underlying: error)
-                }
-            }
-    }
-
-    /// Removes all files within a directory. Does nothing if the directory
-    /// doesn't exist.
-    private func removeContents(of directory: URL) throws {
-        guard fileManager.fileExists(atPath: directory.path) else { return }
-        let urls: [URL]
-        do {
-            urls = try fileManager.contentsOfDirectory(
-                at: directory,
-                includingPropertiesForKeys: nil
-            )
-        } catch {
-            throw ReportStoreError.readFailed(path: directory.path, underlying: error)
-        }
-
-        for url in urls {
-            do {
-                try fileManager.removeItem(at: url)
-            } catch {
-                throw ReportStoreError.deleteFailed(
-                    reportId: url.deletingPathExtension().lastPathComponent,
-                    underlying: error
-                )
-            }
-        }
+public extension ReportStore {
+    /// Convenience overload — prunes sent reports older than 30 days.
+    @discardableResult
+    func pruneSent() async throws -> Int {
+        try await pruneSent(olderThan: 30)
     }
 }

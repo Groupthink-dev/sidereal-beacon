@@ -71,7 +71,7 @@ public actor Beacon {
     private var _config: BeaconConfig
     private let appInfo: AppInfo
     private let scrubber: PIIScrubber
-    private let store: ReportStore
+    private let store: any ReportStore
     private let breadcrumbs: BreadcrumbTrail
     private let crashCollector: CrashCollector
     private let guardian: ProcessGuardian
@@ -101,13 +101,28 @@ public actor Beacon {
     ///   - appVersion: Semantic version of the host app (e.g. "0.44.3.3").
     ///   - component: Component identifier (e.g. "daemon", "mcp.stallari-blade").
     ///   - customScrubPatterns: Optional additional PII patterns for the scrubber.
+    ///   - outboundGate: Optional outbound gate (DD-270 Phase 0).
+    ///   - reportStore: Optional injected ``ReportStore``. Defaults to
+    ///     ``FileReportStore`` (JSON-on-disk). External SDK consumers continue
+    ///     to receive the file-backed default; encrypted persistence
+    ///     (SQLCipher) lives in the harness via DD-247 and is not available
+    ///     here. Bring your own ``ReportStore`` if you need durable encrypted
+    ///     storage.
+    ///   - pathResolver: Optional ``PathResolving`` to install on
+    ///     ``BeaconPaths`` before this call. Convenience for callers that
+    ///     want path injection in one shot.
     /// - Returns: A configured ``Beacon`` instance. Call ``start()`` to activate.
     public static func configure(
         appVersion: String,
         component: String,
         customScrubPatterns: [(pattern: String, replacement: String)] = [],
-        outboundGate: OutboundGate? = nil
+        outboundGate: OutboundGate? = nil,
+        reportStore: (any ReportStore)? = nil,
+        pathResolver: PathResolving? = nil
     ) async -> Beacon {
+        if let pathResolver {
+            BeaconPaths.configure(resolver: pathResolver)
+        }
         let config = BeaconConfig.load()
         let app = AppInfo(version: appVersion, component: component)
 
@@ -115,6 +130,7 @@ public actor Beacon {
             config: config,
             appInfo: app,
             customScrubPatterns: customScrubPatterns,
+            store: reportStore,
             outboundGate: outboundGate
         )
     }
@@ -130,7 +146,7 @@ public actor Beacon {
         config: BeaconConfig,
         appInfo: AppInfo,
         customScrubPatterns: [(pattern: String, replacement: String)] = [],
-        store: ReportStore? = nil,
+        store: (any ReportStore)? = nil,
         guardian: ProcessGuardian? = nil,
         circuitBreaker: CircuitBreaker? = nil,
         outboundGate: OutboundGate? = nil
@@ -138,7 +154,7 @@ public actor Beacon {
         self._config = config
         self.appInfo = appInfo
         self.scrubber = PIIScrubber(customPatterns: customScrubPatterns)
-        let storeInstance = store ?? ReportStore()
+        let storeInstance: any ReportStore = store ?? FileReportStore()
         self.store = storeInstance
         self.sender = ReportSender(
             config: config,

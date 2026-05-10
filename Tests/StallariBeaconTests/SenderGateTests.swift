@@ -19,8 +19,8 @@ struct SenderGateTests {
 
     private func makeStore() -> (store: ReportStore, cleanup: @Sendable () -> Void) {
         let tempDir = FileManager.default.temporaryDirectory
-            .appendingPathComponent("stallari-beacon-gate-tests-\(UUID().uuidString)")
-        let store = ReportStore(baseDirectory: tempDir)
+            .appendingPathComponent("fabric-nerve-gate-tests-\(UUID().uuidString)")
+        let store = FileReportStore(baseDirectory: tempDir)
         let cleanup: @Sendable () -> Void = {
             try? FileManager.default.removeItem(at: tempDir)
         }

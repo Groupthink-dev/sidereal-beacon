@@ -46,8 +46,7 @@ public struct BeaconConfig: Codable, Sendable, Equatable {
     // MARK: - Persistence
 
     private static var configDirectory: URL {
-        FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent(".config/stallari/beacon", isDirectory: true)
+        BeaconPaths.directory(for: .beaconRoot)
     }
 
     private static var configFileURL: URL {
