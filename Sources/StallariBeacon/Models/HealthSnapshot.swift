@@ -66,22 +66,38 @@ public struct DaemonHealth: Codable, Sendable, Equatable {
 
 // MARK: - HealthSnapshot
 
-public struct HealthSnapshot: Codable, Sendable, Equatable {
+public struct HealthSnapshot: Sendable, Equatable {
     public let snapshotAt: Date
     public let daemons: [DaemonHealth]
     public let lensLockContentionRate: Double?
     public let healthLoopTickRate: Double?
 
+    /// Schema 1.3.0+ (DD-270 Phase C). Mirror of fabric/FabricNerve.
+    public let indexHealth: [BladeIndexHealth]?
+
+    /// Schema 1.3.0+ (DD-270 Phase C). Mirror of fabric/FabricNerve.
+    public let tracks: TracksHealth?
+
+    /// Schema 1.3.0+ (DD-270 Phase C). Mirror of fabric/FabricNerve.
+    /// DD-272 Phase A consumes ``OutboxHealth/pending``.
+    public let outbox: OutboxHealth?
+
     public init(
         snapshotAt: Date,
         daemons: [DaemonHealth],
         lensLockContentionRate: Double? = nil,
-        healthLoopTickRate: Double? = nil
+        healthLoopTickRate: Double? = nil,
+        indexHealth: [BladeIndexHealth]? = nil,
+        tracks: TracksHealth? = nil,
+        outbox: OutboxHealth? = nil
     ) {
         self.snapshotAt = snapshotAt
         self.daemons = daemons
         self.lensLockContentionRate = lensLockContentionRate
         self.healthLoopTickRate = healthLoopTickRate
+        self.indexHealth = indexHealth
+        self.tracks = tracks
+        self.outbox = outbox
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -89,5 +105,37 @@ public struct HealthSnapshot: Codable, Sendable, Equatable {
         case daemons
         case lensLockContentionRate = "lens_lock_contention_rate"
         case healthLoopTickRate = "health_loop_tick_rate"
+        case indexHealth = "index_health"
+        case tracks
+        case outbox
+    }
+}
+
+// MARK: - HealthSnapshot + Codable
+
+// Custom Codable so schema 1.3.0 fields decode through `decodeIfPresent` —
+// readers built against 1.2.0 decode without error and surface `nil` for
+// the new rows.
+extension HealthSnapshot: Codable {
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        snapshotAt = try container.decode(Date.self, forKey: .snapshotAt)
+        daemons = try container.decode([DaemonHealth].self, forKey: .daemons)
+        lensLockContentionRate = try container.decodeIfPresent(Double.self, forKey: .lensLockContentionRate)
+        healthLoopTickRate = try container.decodeIfPresent(Double.self, forKey: .healthLoopTickRate)
+        indexHealth = try container.decodeIfPresent([BladeIndexHealth].self, forKey: .indexHealth)
+        tracks = try container.decodeIfPresent(TracksHealth.self, forKey: .tracks)
+        outbox = try container.decodeIfPresent(OutboxHealth.self, forKey: .outbox)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(snapshotAt, forKey: .snapshotAt)
+        try container.encode(daemons, forKey: .daemons)
+        try container.encodeIfPresent(lensLockContentionRate, forKey: .lensLockContentionRate)
+        try container.encodeIfPresent(healthLoopTickRate, forKey: .healthLoopTickRate)
+        try container.encodeIfPresent(indexHealth, forKey: .indexHealth)
+        try container.encodeIfPresent(tracks, forKey: .tracks)
+        try container.encodeIfPresent(outbox, forKey: .outbox)
     }
 }
