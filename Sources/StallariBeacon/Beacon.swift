@@ -72,6 +72,7 @@ public actor Beacon {
     private let appInfo: AppInfo
     private let scrubber: PIIScrubber
     private let store: any ReportStore
+    private let identityProvider: any BeaconIdentityProvider
     private let breadcrumbs: BreadcrumbTrail
     private let crashCollector: CrashCollector
     private let guardian: ProcessGuardian
@@ -118,7 +119,8 @@ public actor Beacon {
         customScrubPatterns: [(pattern: String, replacement: String)] = [],
         outboundGate: OutboundGate? = nil,
         reportStore: (any ReportStore)? = nil,
-        pathResolver: PathResolving? = nil
+        pathResolver: PathResolving? = nil,
+        identityProvider: (any BeaconIdentityProvider)? = nil
     ) async -> Beacon {
         if let pathResolver {
             BeaconPaths.configure(resolver: pathResolver)
@@ -131,7 +133,8 @@ public actor Beacon {
             appInfo: app,
             customScrubPatterns: customScrubPatterns,
             store: reportStore,
-            outboundGate: outboundGate
+            outboundGate: outboundGate,
+            identityProvider: identityProvider
         )
     }
 
@@ -149,13 +152,15 @@ public actor Beacon {
         store: (any ReportStore)? = nil,
         guardian: ProcessGuardian? = nil,
         circuitBreaker: CircuitBreaker? = nil,
-        outboundGate: OutboundGate? = nil
+        outboundGate: OutboundGate? = nil,
+        identityProvider: (any BeaconIdentityProvider)? = nil
     ) {
         self._config = config
         self.appInfo = appInfo
         self.scrubber = PIIScrubber(customPatterns: customScrubPatterns)
         let storeInstance: any ReportStore = store ?? FileReportStore()
         self.store = storeInstance
+        self.identityProvider = identityProvider ?? FileInstallIDProvider()
         self.sender = ReportSender(
             config: config,
             store: storeInstance,
@@ -438,6 +443,16 @@ public actor Beacon {
     /// The current beacon configuration.
     public var config: BeaconConfig {
         _config
+    }
+
+    // MARK: - Identity (DD-270 Phase B)
+
+    /// Returns the per-install identifier from the configured
+    /// ``BeaconIdentityProvider``. Defaults to the file-backed provider in
+    /// SDK use; the harness injects a CredentialStore-backed provider at
+    /// startup so identity persists in the system Keychain (DD-186).
+    public func installID() -> String {
+        identityProvider.installID()
     }
 
     // MARK: - Private Helpers
